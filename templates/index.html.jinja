@@ -5,15 +5,95 @@
     <meta name="viewport"
           content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <link href="{{url_for('static', filename='css/main.css')}}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/main.css') }}" rel="stylesheet">
     <title>TA Virgy Ferdian</title>
+    <style>
+        .hidden {
+            display: none;
+        }
+    </style>
 </head>
-<body class="flex">
-    <main class="w-lg h-lg bg-red-500">
-        <div class="flex flex-col items-center justify-center h-full">
-            <h1 class="text-4xl font-bold text-white">Hello, {{ name }}!</h1>
-            <p class="text-lg text-white mt-4">Welcome to the Flask app with Jinja2!</p>
+<body class="flex flex-col w-screen min-h-screen bg-gradient-to-br from-neutral-800 to-neutral-900 text-white overflow-x-hidden justify-end items-end">
+<div class="flex flex-col md:flex-row h-screen w-screen relative md:justify-end justify-start">
+    <!-- Sidebar / Topbar -->
+    <nav class="w-full md:w-1/4 bg-neutral-800 text-gray-300 p-5 md:h-screen fixed md:top-0 md:left-0 z-50">
+        <ul class="flex md:flex-col md:space-y-6 space-x-6 md:space-x-0">
+            <li><a href="#"
+                   class="block py-3 px-5 rounded-lg bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-bold shadow-md hover:from-purple-400 hover:to-indigo-400 transform hover:scale-105 transition duration-300"
+                   onclick="loadPage('homePage')">Home</a></li>
+            <li><a href="#"
+                   class="block py-3 px-5 rounded-lg bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-bold shadow-md hover:from-purple-400 hover:to-indigo-400 transform hover:scale-105 transition duration-300"
+                   onclick="loadPage('predictPage')">Predict</a></li>
+            <li><a href="#"
+                   class="block py-3 px-5 rounded-lg bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-bold shadow-md hover:from-purple-400 hover:to-indigo-400 transform hover:scale-105 transition duration-300"
+                   onclick="loadPage('trainModelPage')">Train Model</a></li>
+        </ul>
+    </nav>
+    <main id="mainContent" class="w-full h-screen flex items-center justify-center md:w-3/4 text-center relative">
+        <div class="absolute inset-0 pointer-events-none">
+            <div class="absolute bg-gradient-to-t from-purple-700 to-transparent opacity-20 w-40 h-40 rounded-full top-10 left-10"></div>
+            <div class="absolute bg-gradient-to-t from-indigo-700 to-transparent opacity-20 w-64 h-64 rounded-full bottom-20 right-20"></div>
+            <div class="absolute bg-gradient-to-t from-pink-700 to-transparent opacity-15 w-52 h-52 rounded-full bottom-10 left-1/3 transform -translate-x-1/2"></div>
+        </div>
+        <!-- Default Home Page -->
+        <div id="homePage" class="page">
+            <h1 class="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-indigo-500">
+                Welcome to Stock Price Prediction</h1>
+            <p class="text-lg text-gray-400 mt-4 text-center">Navigate through the sidebar to explore.</p>
+        </div>
+        <div id="predictPage" class="page hidden">
+            <div class="flex flex-col items-center justify-center bg-neutral-800 shadow-lg rounded-lg p-10 relative z-10">
+                <h1 class="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-indigo-500">
+                    Stock Price Prediction</h1>
+                <p class="text-lg text-gray-400 mt-4 text-center">Select a stock code to predict its next price
+                    movement.</p>
+                <div class="w-full mt-6">
+                    <select id="stockDropdown"
+                            class="w-full p-4 text-gray-300 bg-neutral-700 border border-gray-600 rounded-md shadow-sm focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                            placeholder="Select Stock code">
+                        <option value="" disabled selected>Select Stock code</option>
+                        <option value="AAPL">Apple (AAPL)</option>
+                        <option value="GOOGL">Google (GOOGL)</option>
+                        <option value="AMZN">Amazon (AMZN)</option>
+                    </select>
+                    <button id="predictButton"
+                            class="mt-6 w-full px-6 py-3 text-lg bg-gradient-to-r from-green-600 to-green-700 text-white font-bold rounded-md shadow-lg hover:from-green-500 hover:to-green-600 transform hover:scale-105 transition duration-200 hover:cursor-pointer"
+                            onclick="predictNextMove()">Predict Next Price Move
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div id="trainModelPage" class="page hidden">
+            <h1 class="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-indigo-500">
+                Train Model</h1>
+            <p class="text-lg text-gray-400 mt-4 text-center">This is a dummy page for training the model.</p>
         </div>
     </main>
+</div>
+<footer class="w-full md:w-3/4 md:content-end py-4 bg-neutral-800 text-center text-gray-400">
+    <p>&copy; 2024 Stock Prediction. All rights reserved.</p>
+</footer>
+
+<script>
+    function predictNextMove() {
+        const dropdown = document.getElementById('stockDropdown');
+        const selectedStock = dropdown.value;
+        if (selectedStock) {
+            alert(`Predicting next move for ${selectedStock}...`);
+        } else {
+            alert('Please select a stock code.');
+        }
+    }
+
+    function loadPage(pageId) {
+        const pages = document.querySelectorAll('.page');
+        pages.forEach(page => page.classList.add('hidden'));
+
+        const activePage = document.getElementById(pageId);
+        if (activePage) {
+            activePage.classList.remove('hidden');
+        }
+    }
+</script>
 </body>
 </html>
