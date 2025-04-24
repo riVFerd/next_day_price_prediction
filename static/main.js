@@ -1,55 +1,92 @@
-document.addEventListener('DOMContentLoaded', function () {
-    loadStocks().then((stockList) => {
-        setupCustomDropdown(stockList)
+document.addEventListener('alpine:initializing', function () {
+    Alpine.store('activePage', {
+        init() {
+            this.load(this.value);
+        },
+        value: Alpine.$persist('homePage').as('activePage'),
+        load(pageId) {
+            this.value = pageId;
+        }
     });
-    const activePage = localStorage.getItem('activePage') || 'homePage';
-    loadPage(activePage);
-});
+
+    Alpine.store('stockQuotes', {
+            init() {
+                this.loadData().then(() => {
+                    this.filteredList = this.value;
+                    setupCustomDropdown(this.value, (filteredList) => {
+                        this.filteredList = filteredList;
+                    }, (newSearchInput, newSelectedCode) => {
+                        this.searchInput = newSearchInput;
+                        this.selectedCode = newSelectedCode;
+                    });
+                });
+            },
+            value: Alpine.$persist([]).as('stockQuotes'),
+            filteredList: [],
+            searchInput: '',
+            selectedCode: '',
+            selectStock(stock) {
+                this.searchInput = `(${stock.code}) - ${stock.name} `;
+                this.selectedCode = stock.code;
+                this.filteredList = this.value;
+                document.getElementById('dropdownMenu').classList.add('hidden');
+            },
+            async loadData() {
+                if (this.value.length > 0) {
+                    console.log('Stock quotes already loaded: ', this.value.length + ' stocks');
+                    return;
+                }
+                try {
+                    const response = await fetch('/list-stock');
+
+                    if (!response.ok) {
+                        new Error(`HTTP error! Status: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    console.log('Successfully fetched stocks: ', data.length + ' stocks');
+                    this.value = data;
+                } catch (error) {
+                    console.error('Error fetching stocks:', error);
+                    this.value = [];
+                }
+            },
+        }
+    );
+})
+
+
+class Debouncer {
+    constructor(delay = 300) {
+        this.delay = delay;
+        this.timeoutId = null;
+    }
+
+    debounce(callback) {
+        clearTimeout(this.timeoutId);
+        this.timeoutId = setTimeout(callback, this.delay);
+    }
+}
 
 // Caution: Should only be called once and after the DOM is fully loaded
-function setupCustomDropdown(stocks) {
+function setupCustomDropdown(stocks, setFilteredList, setSelected) {
     const searchInput = document.getElementById('searchInput');
     const dropdownMenu = document.getElementById('dropdownMenu');
+
+    const debouncer = new Debouncer(300);
 
     // Handle input event on search box
     searchInput.addEventListener('input', function () {
         const searchTerm = searchInput.value.toLowerCase().trim();
 
-        // Clear previous results
-        dropdownMenu.innerHTML = '';
-
-        // Filter stocks based on search term
-        const filteredStocks = stocks.filter(stock =>
-            stock.name.toLowerCase().includes(searchTerm) ||
-            stock.code.toLowerCase().includes(searchTerm)
-        );
-
-        // Populate dropdown with filtered stocks
-        filteredStocks.forEach(stock => {
-            const listItem = document.createElement('li');
-            listItem.textContent = `${stock.name} (${stock.code})`;
-            listItem.className = 'p-4 hover:bg-neutral-600 cursor-pointer';
-
-            // Handle click event when selecting an option
-            listItem.addEventListener('click', function () {
-                searchInput.value = stock.name + ' (' + stock.code + ')'; // Set input value
-                searchInput.dataset.selectedCode = stock.code; // Store selected stock code as data
-                dropdownMenu.classList.add('hidden'); // Hide dropdown
-            });
-
-            dropdownMenu.appendChild(listItem);
-        });
-
-        // Show dropdown if filtered stocks are available
-        if (filteredStocks.length > 0) {
-            dropdownMenu.classList.remove('hidden');
-        } else {
-            const noResultItem = document.createElement('li');
-            noResultItem.textContent = 'No results found';
-            noResultItem.className = 'p-4 text-gray-500';
-            dropdownMenu.appendChild(noResultItem);
-            dropdownMenu.classList.remove('hidden');
-        }
+        debouncer.debounce(() => {
+            // Filter stocks based on search term
+            const filteredStocks = stocks.filter(stock =>
+                stock.name.toLowerCase().includes(searchTerm) ||
+                stock.code.toLowerCase().includes(searchTerm)
+            );
+            setFilteredList(filteredStocks);
+        })
     });
 
     // Hide dropdown when clicking outside the input or dropdown
@@ -61,53 +98,9 @@ function setupCustomDropdown(stocks) {
 
     // Show dropdown when input is focused and not empty
     searchInput.addEventListener('focus', function () {
-        if (searchInput.value.trim() !== '') {
-            dropdownMenu.classList.remove('hidden');
-        }
+        dropdownMenu.classList.remove('hidden');
     });
 }
-
-
-async function loadStocks() {
-    // check if the list of stocks already on local storage to faster the loading
-    const stocks = localStorage.getItem('stocks');
-    if (stocks) {
-        const data = JSON.parse(stocks);
-        console.log('Stocks loaded from local storage: ', data.length + ' stocks');
-        // populateDropdown(data);
-        return data;
-    } else {
-        try {
-            const response = await fetch('/list-stock', {
-                method: 'GET',
-            });
-
-            if (!response.ok) {
-                new Error(`HTTP error! Status: ${response.status}`);
-            }
-
-            const data = await response.json();
-            console.log('Successfully fetched stocks: ', data.length + ' stocks');
-            // Save to local storage and populate dropdown
-            localStorage.setItem('stocks', JSON.stringify(data));
-            // populateDropdown(data);
-            return data;
-        } catch (error) {
-            console.error('Error fetching stocks:', error);
-        }
-    }
-}
-
-// function populateDropdown(stocks) {
-//     const dropdown = document.getElementById('stockDropdown');
-//     dropdown.innerHTML = '<option value="" disabled selected>Select Stock code</option>';
-//     stocks.forEach(stock => {
-//         const option = document.createElement('option');
-//         option.value = stock.code;
-//         option.textContent = stock.name + ' (' + stock.code + ')';
-//         dropdown.appendChild(option);
-//     });
-// }
 
 function predictNextMove() {
     const dropdown = document.getElementById('stockDropdown');
@@ -116,16 +109,5 @@ function predictNextMove() {
         alert(`Predicting next move for ${selectedStock}...`);
     } else {
         alert('Please select a stock code.');
-    }
-}
-
-function loadPage(pageId) {
-    const pages = document.querySelectorAll('.page');
-    pages.forEach(page => page.classList.add('hidden'));
-
-    const activePage = document.getElementById(pageId);
-    if (activePage) {
-        activePage.classList.remove('hidden');
-        localStorage.setItem('activePage', pageId);
     }
 }
