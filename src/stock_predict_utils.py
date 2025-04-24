@@ -1,8 +1,9 @@
 import pandas as pd
 import requests
 import numpy as np
+import tensorflow as tf
+from .stock_response import StockResponse
 from pytz import timezone
-from stock_response import StockResponse
 from datetime import datetime
 from typing import List, Any, Optional
 from stock_indicators import indicators
@@ -77,8 +78,9 @@ def predict_stock_trend(model: Optional[Any], stock_code: str, date: str):
     predicted_class = np.argmax(pred)
 
     label_map = {0: "Downtrend", 1: "neutral", 2: "Uptrend"}
-    print(f"Prediction for {stock_code} on {date}: {label_map[predicted_class]}")
-    return predicted_class
+    # print(f"Prediction for {stock_code} on {date}: {label_map[predicted_class]}") // TODO: benerin lah ini bjir kapan datenya
+    print(f"Prediction for {stock_code}: {label_map[predicted_class]}")
+    return predicted_class, stock_data[-1].date
 
 
 def compute_and_add_indicators(stock_data: List, df: pd.DataFrame) -> pd.DataFrame:
@@ -167,3 +169,23 @@ def compute_and_add_indicators(stock_data: List, df: pd.DataFrame) -> pd.DataFra
     # print(df.dtypes)
 
     return df
+
+def focal_loss_with_class_weights(gamma=2.0, alpha=None):
+    if alpha is None:
+        alpha = [0.4, 1.2, 0.4]
+
+    def loss(y_true, y_pred):
+        y_true = tf.one_hot(tf.cast(tf.squeeze(y_true), tf.int32), depth=3)
+        y_pred = tf.clip_by_value(y_pred, 1e-8, 1.0)
+
+        cross_entropy = -y_true * tf.math.log(y_pred)
+        weight = tf.pow(1 - y_pred, gamma)
+
+        if alpha is not None:
+            alpha_tensor = tf.constant(alpha, dtype=tf.float32)
+            alpha_weight = y_true * alpha_tensor
+            weight *= alpha_weight
+
+        loss = weight * cross_entropy
+        return tf.reduce_mean(tf.reduce_sum(loss, axis=-1))
+    return loss
