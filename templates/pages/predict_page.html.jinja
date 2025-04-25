@@ -1,0 +1,127 @@
+<!-- Predict Page -->
+        <div x-data x-cloak id="predictPage" class="page"
+             :class="$store.activePage.value !== 'predictPage' && 'hidden'">
+            <div class="flex flex-col items-center justify-center bg-neutral-800 shadow-lg rounded-lg p-10 relative z-10">
+                <h1 class="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-indigo-500">
+                    Stock Price Prediction</h1>
+                <p class="text-lg text-gray-400 mt-4 text-center">Select a stock code to predict its next price
+                    movement.</p>
+                <div class="w-full mt-6">
+                    <div x-data id="customDropdown" class="w-full relative">
+                        <!-- Search Input -->
+                        <input x-data type="text" id="searchInput" x-model="$store.stockQuotes.searchInput"
+                               @click="$store.stockPredictions.prediction = ''"
+                               class="w-full p-4 rounded-md text-gray-300 bg-neutral-700 border border-gray-600 shadow-sm focus:ring-2 focus:ring-purple-500"
+                               placeholder="Search stock codes..." autocomplete="off">
+
+                        <!-- Dropdown Menu -->
+                        <ul x-data id="dropdownMenu"
+                            class="absolute z-10 hidden w-full bg-neutral-700 border border-gray-600 rounded-md shadow-lg max-h-60 overflow-y-auto text-gray-300">
+                            <template x-if="$store.stockQuotes.filteredList.length <= 0">
+                                <li class="p-4 text-gray-500">No results found</li>
+                            </template>
+                            <template x-data x-for="stockQuote in $store.stockQuotes.filteredList">
+                                <li x-data @click="$store.stockQuotes.selectStock(stockQuote)"
+                                    class="p-4 hover:bg-gradient-to-r from-purple-500 to-indigo-500 cursor-pointer">
+                                    <span x-text="stockQuote.code"></span> - <span x-text="stockQuote.name"></span>
+                                </li>
+                            </template>
+                        </ul>
+                    </div>
+
+                    <button x-data id="predictButton"
+                            @click="$store.stockPredictions.predictNextMove($store.stockQuotes.selectedCode)"
+                            :disabled="$store.stockQuotes.selectedCode === '' || $store.stockPredictions.isLoading"
+                            x-text="$store.stockPredictions.isLoading ? 'Loading...' : 'Predict Next Price Move'"
+                            class="mt-6 w-full px-6 py-3 text-lg bg-gradient-to-r from-green-600 to-green-700 text-white font-bold rounded-md shadow-lg hover:from-green-500 hover:to-green-600 transform hover:scale-105 transition duration-200 hover:cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                    </button>
+
+
+                    <!-- Error Display -->
+                    <div id="errorMessage"
+                         class="mt-4 w-full p-4 bg-red-600 text-white font-bold rounded-md text-center shadow-md transition-all"
+                         x-show="$store.stockPredictions.error !== ''"
+                         x-text="$store.stockPredictions.error"
+                         x-transition.duration.500ms>
+                    </div>
+
+                    <!-- Prediction Result -->
+                    <div id="predictionResult"
+                         class="mt-6 w-full p-6 bg-neutral-800 rounded-md shadow-lg text-center transition-all"
+                         x-show="$store.stockPredictions.prediction !== ''" x-transition.duration.500ms>
+                        <h2 class="text-2xl font-bold text-gradient rounded-md py-2">
+                            Prediction Result
+                        </h2>
+                        <div id="resultMessage" class="text-lg text-gray-300 mt-4">
+                            <p>
+                                The predicted next close price movement for <span
+                                    x-text="$store.stockQuotes.selectedCode"></span>
+                                is:
+                                <span x-data x-text="$store.stockPredictions.prediction" class="font-bold"></span>
+                            </p>
+
+                            <p class="text-sm text-gray-400 mt-4">
+                                Last close price date: <span x-data
+                                                             x-text="$store.stockPredictions.lastKnownDate || 'N/A'"></span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Prediction History Popup -->
+            <div x-data="{ isHistoryVisible: false }"
+                 :class="isHistoryVisible ? 'bottom-1/2 translate-y-1/2 z-50 min-h-[50vh] md:w-[60vw]' : '-bottom-2 z-10 md:w-[75vw]'"
+                 class="absolute left-1/2 -translate-x-1/2  bg-neutral-800 bg-opacity-90 flex flex-col items-center justify-center p-6 rounded-lg shadow-lg w-screen max-h-screen transition-all duration-500">
+                <!-- Small History Button -->
+                <button @click="isHistoryVisible = true" x-show="!isHistoryVisible"
+                        class="absolute top-0 text-transparent py-2  bg-clip-text bg-gradient-to-r from-blue-500 to-blue-600 cursor-pointer font-bold hover:from-blue-400 hover:to-blue-500 hover:scale-110 transition-all">
+                    Show History
+                </button>
+
+                <!--- History Content as a Table --->
+                <div x-show="isHistoryVisible">
+                    <h2 class="text-3xl font-bold text-gray-100 mb-4">Prediction History</h2>
+                    <div class="w-full overflow-y-auto bg-neutral-700 rounded-md p-4 text-gray-300">
+                        <table id="historyTable" class="table-auto w-full text-left border-collapse">
+                            <thead class="bg-neutral-800">
+                            <tr>
+                                <th class="px-4 py-2 border border-gray-600">Stock Code</th>
+                                <th class="px-4 py-2 border border-gray-600">Last Close Price Date</th>
+                                <th class="px-4 py-2 border border-gray-600">Next Close Price Prediction</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <template x-data x-for="history in $store.stockPredictions.paginatedHistory">
+                                <tr>
+                                    <td class="px-4 py-2 border border-gray-600" x-text="history.stock_code"></td>
+                                    <td class="px-4 py-2 border border-gray-600" x-text="history.date"></td>
+                                    <td class="px-4 py-2 border border-gray-600" x-text="history.prediction"></td>
+                                </tr>
+                            </template>
+                            </tbody>
+                        </table>
+                        <div class="flex justify-between items-center mt-4">
+                            <button
+                                    class="px-4 py-2 bg-neutral-700 text-gray-300 rounded-lg shadow-md hover:bg-neutral-600 transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    :disabled="$store.stockPredictions.currentPage === 1"
+                                    @click="$store.stockPredictions.currentPage--">Previous
+                            </button>
+                            <div class="text-gray-400">Page <span x-text="$store.stockPredictions.currentPage"></span> of <span
+                                    x-text="$store.stockPredictions.totalPages"></span></div>
+                            <button
+                                    class="px-4 py-2 bg-neutral-700 text-gray-300 rounded-lg shadow-md hover:bg-neutral-600 transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    :disabled="$store.stockPredictions.currentPage === $store.stockPredictions.totalPages"
+                                    @click="$store.stockPredictions.currentPage++">Next
+                            </button>
+                        </div>
+                        <p x-show="$store.stockPredictions.history.length === 0" class="text-gray-500 text-center mt-4">No history found.</p>
+                    </div>
+
+                    <button @click="isHistoryVisible = false"
+                            class="mt-6 px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white font-bold rounded-lg shadow-md hover:from-red-400 hover:to-red-500 transition duration-300">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>

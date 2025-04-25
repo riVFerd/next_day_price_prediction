@@ -72,6 +72,17 @@ document.addEventListener('alpine:initializing', function () {
         lastKnownDate: '',
         isLoading: false,
         error: '',
+        history: Alpine.$persist([]).as('stockHistory'),
+        itemsPerPage: 10,
+        currentPage: 1,
+        get paginatedHistory() {
+            const start = (this.currentPage - 1) * this.itemsPerPage;
+            const end = start + this.itemsPerPage;
+            return this.history.slice(start, end);
+        },
+        get totalPages() {
+            return Math.ceil(this.history.length / this.itemsPerPage);
+        },
         async predictNextMove(stockCode) {
             this.isLoading = true;
             this.error = '';
@@ -91,6 +102,12 @@ document.addEventListener('alpine:initializing', function () {
 
                 this.prediction = (data.prediction === '0') ? 'Downtrend' : (data.prediction === '1') ? 'Neutral' : 'Uptrend';
                 this.lastKnownDate = data.last_date;
+
+                this.history.unshift({
+                    stock_code: stockCode,
+                    date: data.last_date,
+                    prediction: this.prediction,
+                });
             } catch (e) {
                 console.error('Error predicting stock:', e);
                 this.error = e;
