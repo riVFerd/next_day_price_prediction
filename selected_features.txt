@@ -1,5 +1,0 @@
-MACD
-ATR
-%K
-MFI
-CCI

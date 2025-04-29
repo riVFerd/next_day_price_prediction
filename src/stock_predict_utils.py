@@ -48,7 +48,7 @@ def predict_stock_trend(model: Optional[Any], stock_code: str, date: str):
 
     # Only use feature that saved on "selected_features.txt"
     selected_features = []
-    with open("selected_features.txt", "r") as f:
+    with open("keras_models/selected_features.txt", "r") as f:
         for line in f:
             selected_features.append(line.strip())
     feature_df = feature_df[selected_features]
@@ -172,7 +172,7 @@ def compute_and_add_indicators(stock_data: List, df: pd.DataFrame) -> pd.DataFra
 
 def focal_loss_with_class_weights(gamma=2.0, alpha=None):
     if alpha is None:
-        alpha = [0.4, 1.2, 0.4]
+        alpha = [0.3, 1.0, 0.3]
 
     def loss(y_true, y_pred):
         y_true = tf.one_hot(tf.cast(tf.squeeze(y_true), tf.int32), depth=3)
