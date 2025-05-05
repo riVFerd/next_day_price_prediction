@@ -9,21 +9,14 @@ from typing import List, Any, Optional
 from stock_indicators import indicators
 
 def convert_to_unix_timestamp(date_str: str) -> int:
-    jakarta_tz = timezone("Asia/Jakarta")
-    current_time = datetime.now(jakarta_tz)
-    date_with_time = datetime.strptime(date_str, "%Y-%m-%d").replace(
-        hour=current_time.hour,
-        minute=current_time.minute,
-        second=current_time.second,
-        tzinfo=jakarta_tz
-    )
+    date_with_time = datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
     return int(date_with_time.timestamp())
 
 
 def predict_stock_trend(model: Optional[Any], stock_code: str, date: str):
     # Convert date
     end_ts = convert_to_unix_timestamp(date)
-    start_ts = convert_to_unix_timestamp("2020-01-01")  # or go 100 days back
+    start_ts = convert_to_unix_timestamp("2020-01-01 17:00:00")  # or go 100 days back
 
     # Fetch data
     stock_url = f"https://query2.finance.yahoo.com/v8/finance/chart/{stock_code}?period1={start_ts}&period2={end_ts}&interval=1d"
@@ -54,7 +47,7 @@ def predict_stock_trend(model: Optional[Any], stock_code: str, date: str):
     feature_df = feature_df[selected_features]
 
     # Get last window (e.g., last 60 days)
-    window_size = 20 # TODO: change to load from config file later
+    window_size = 20  # TODO: change to load from config file later
     if len(feature_df) < window_size:
         print("Not enough data to predict")
         return

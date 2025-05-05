@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import requests
 from flask import Flask, render_template, jsonify, request
@@ -35,6 +35,8 @@ def predict():
         return jsonify({"error": "Stock code is required"}), 400
     stock_code += ".JK"  # Add .JK suffix for Indonesian stocks
     date = datetime.now().strftime('%Y-%m-%d')
+    if datetime.now().hour < 16:
+        date = (datetime.now() - timedelta(days=1)).replace(hour=17, minute=0, second=0).strftime('%Y-%m-%d %H:%M:%S')
 
     # Debug mode to save computation time, remove later
     # return jsonify(
