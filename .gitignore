@@ -9,3 +9,5 @@ package-lock.json\
 *.keras
 /checkpoints
 /keras_models-percobaan
+!/keras_models
+!/keras_models/*.keras
