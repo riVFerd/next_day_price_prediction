@@ -1,0 +1,16 @@
+{
+  "name": "next_day_price_prediction",
+  "version": "1.0.0",
+  "description": "Just for generating css files for the project",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "npx @tailwindcss/cli -i ./static/src/input.css -o ./static/css/main.css --watch"
+  },
+  "author": "riVFerd",
+  "license": "ISC",
+  "dependencies": {
+    "@tailwindcss/cli": "^4.1.4",
+    "tailwindcss": "^4.1.4"
+  }
+}

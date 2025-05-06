@@ -8,5 +8,4 @@ package-lock.json\
 *.h5
 *.keras
 /checkpoints
-/keras_models
 /keras_models-percobaan
