@@ -1,4 +1,5 @@
 import json
+import pytz
 from datetime import datetime, timedelta
 
 import requests
@@ -34,7 +35,9 @@ def predict():
     if not stock_code:
         return jsonify({"error": "Stock code is required"}), 400
     stock_code += ".JK"  # Add .JK suffix for Indonesian stocks
-    date = datetime.now().strftime('%Y-%m-%d')
+    timezone = pytz.timezone('Asia/Jakarta')  # Adjust if needed
+    date = datetime.now(timezone).strftime('%Y-%m-%d')
+    print(f"Today time: {datetime.now(timezone)}")
     if datetime.now().hour < 16:
         date = (datetime.now() - timedelta(days=1)).replace(hour=17, minute=0, second=0).strftime('%Y-%m-%d %H:%M:%S')
 
