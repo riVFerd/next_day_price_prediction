@@ -11,3 +11,7 @@ package-lock.json\
 /keras_models-percobaan
 !/keras_models
 !/keras_models/*.keras
+/tuner_results
+/wandb
+/artifacts
+/models
