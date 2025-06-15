@@ -70,7 +70,7 @@ def predict_stock_trend(model: Optional[Any], stock_code: str, date: str):
     label_map = {0: "Downtrend", 1: "Uptrend"}
     # print(f"Prediction for {stock_code} on {date}: {label_map[predicted_class]}")
     print(f"Prediction for {stock_code}: {label_map[predicted_class]}")
-    return predicted_class, stock_data[-1].date
+    return predicted_class, stock_data[-1].date.strftime('%A, %Y-%m-%d')
 
 
 def compute_and_add_indicators(stock_data: List, df: pd.DataFrame) -> pd.DataFrame:

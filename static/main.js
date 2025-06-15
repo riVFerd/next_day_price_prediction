@@ -100,7 +100,7 @@ document.addEventListener('alpine:initializing', function () {
 
                 if (data.error !== undefined) throw new Error(data.error);
 
-                this.prediction = (data.prediction === '0') ? 'Downtrend' : (data.prediction === '1') ? 'Neutral' : 'Uptrend';
+                this.prediction = (data.prediction === '0') ? 'Downtrend' :  'Uptrend';
                 this.lastKnownDate = data.last_date;
 
                 this.history.unshift({
