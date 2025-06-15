@@ -1,7 +1,7 @@
 import pandas as pd
 import requests
 import numpy as np
-import tensorflow as tf
+from tensorflow.keras import backend as K
 from .stock_response import StockResponse
 from pytz import timezone
 from datetime import datetime
@@ -16,7 +16,7 @@ def convert_to_unix_timestamp(date_str: str) -> int:
 def predict_stock_trend(model: Optional[Any], stock_code: str, date: str):
     # Convert date
     end_ts = convert_to_unix_timestamp(date)
-    start_ts = convert_to_unix_timestamp("2020-01-01 17:00:00")  # or go 100 days back
+    start_ts = convert_to_unix_timestamp("2010-01-01 17:00:00")  # or go 100 days back
 
     # Fetch data
     stock_url = f"https://query2.finance.yahoo.com/v8/finance/chart/{stock_code}?period1={start_ts}&period2={end_ts}&interval=1d"
@@ -37,7 +37,7 @@ def predict_stock_trend(model: Optional[Any], stock_code: str, date: str):
     df = compute_and_add_indicators(stock_data, df)
 
     # Drop non-feature columns
-    feature_df = df.drop(columns=["date", "next_day_price_move"], errors="ignore")
+    feature_df = df.drop(columns=["date"], errors="ignore")
 
     # Only use feature that saved on "selected_features.txt"
     selected_features = []
@@ -47,7 +47,7 @@ def predict_stock_trend(model: Optional[Any], stock_code: str, date: str):
     feature_df = feature_df[selected_features]
 
     # Get last window (e.g., last 60 days)
-    window_size = 20  # TODO: change to load from config file later
+    window_size = 5  # TODO: change to load from config file later
     if len(feature_df) < window_size:
         print("Not enough data to predict")
         return
@@ -62,16 +62,13 @@ def predict_stock_trend(model: Optional[Any], stock_code: str, date: str):
         # For iterables other than NumPy arrays
         x_input = np.array([float(value) for value in x_input])
 
-
-    # Load model
-    # model = load_model("stock_trend_predictor.h5", custom_objects={'focal_loss': focal_loss})
-
     # Predict
     pred = model.predict(x_input)
-    predicted_class = np.argmax(pred)
+    threshold = 0.5  # Todo: load from config file later if needed
+    predicted_class = int(pred[0][0] > threshold)
 
-    label_map = {0: "Downtrend", 1: "neutral", 2: "Uptrend"}
-    # print(f"Prediction for {stock_code} on {date}: {label_map[predicted_class]}") // TODO: benerin lah ini bjir kapan datenya
+    label_map = {0: "Downtrend", 1: "Uptrend"}
+    # print(f"Prediction for {stock_code} on {date}: {label_map[predicted_class]}")
     print(f"Prediction for {stock_code}: {label_map[predicted_class]}")
     return predicted_class, stock_data[-1].date
 
@@ -163,22 +160,11 @@ def compute_and_add_indicators(stock_data: List, df: pd.DataFrame) -> pd.DataFra
 
     return df
 
-def focal_loss_with_class_weights(gamma=2.0, alpha=None):
-    if alpha is None:
-        alpha = [0.3, 1.0, 0.3]
-
+def focal_loss(alpha=0.25, gamma=2.0):
     def loss(y_true, y_pred):
-        y_true = tf.one_hot(tf.cast(tf.squeeze(y_true), tf.int32), depth=3)
-        y_pred = tf.clip_by_value(y_pred, 1e-8, 1.0)
+        y_pred = K.clip(y_pred, K.epsilon(), 1 - K.epsilon())
+        cross_entropy = -y_true * K.log(y_pred) - (1 - y_true) * K.log(1 - y_pred)
+        weight = alpha * y_true * K.pow(1 - y_pred, gamma) + (1 - alpha) * (1 - y_true) * K.pow(y_pred, gamma)
+        return K.mean(weight * cross_entropy, axis=-1)
 
-        cross_entropy = -y_true * tf.math.log(y_pred)
-        weight = tf.pow(1 - y_pred, gamma)
-
-        if alpha is not None:
-            alpha_tensor = tf.constant(alpha, dtype=tf.float32)
-            alpha_weight = y_true * alpha_tensor
-            weight *= alpha_weight
-
-        loss = weight * cross_entropy
-        return tf.reduce_mean(tf.reduce_sum(loss, axis=-1))
     return loss

@@ -1,5 +1,7 @@
 import json
+import pytz
 from datetime import datetime, timedelta
+import wandb
 
 import requests
 from flask import Flask, render_template, jsonify, request
@@ -7,14 +9,15 @@ from keras.layers import BatchNormalization
 from tensorflow.python.keras.models import load_model
 
 from src.stock_list.stock_list import get_stock_list
-from src.stock_predict_utils import focal_loss_with_class_weights, predict_stock_trend
+from src.stock_predict_utils import focal_loss, predict_stock_trend
 
+model = None
 app = Flask(__name__)
 
 
 @app.route('/')
 def index():
-    return render_template('index.html.jinja', name="Virgy")
+    return render_template('index.html.jinja')
 
 
 @app.route('/list-stock')
@@ -34,7 +37,9 @@ def predict():
     if not stock_code:
         return jsonify({"error": "Stock code is required"}), 400
     stock_code += ".JK"  # Add .JK suffix for Indonesian stocks
-    date = datetime.now().strftime('%Y-%m-%d')
+    timezone = pytz.timezone('Asia/Jakarta')  # Adjust if needed
+    date = datetime.now(timezone).strftime('%Y-%m-%d')
+    print(f"Today time: {datetime.now(timezone)}")
     if datetime.now().hour < 16:
         date = (datetime.now() - timedelta(days=1)).replace(hour=17, minute=0, second=0).strftime('%Y-%m-%d %H:%M:%S')
 
@@ -52,13 +57,15 @@ def predict():
     #     }
     # ),    200
     try:
-        model = load_model(
-            "keras_models/stock_trend_predictor.keras",
-            custom_objects={
-                'loss': focal_loss_with_class_weights(),
-                'BatchNormalization': BatchNormalization,
-            }
-        )
+        global  model
+        if model is None:
+            run = wandb.init(mode="online", project="import-model-test")
+            artifact = run.use_artifact(
+                'rivferd-politeknik-negeri-malang/next_day_price_prediction_TESTING/run_cl70sgdb_model:v7',
+                type='model')
+            artifact_dir = artifact.download()
+            model = load_model(artifact_dir, custom_objects={"loss": focal_loss(alpha=0.5, gamma=1.0)})
+
         prediction, last_date = predict_stock_trend(model, stock_code, date)
         return jsonify(
             {
